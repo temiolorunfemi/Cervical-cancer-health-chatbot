@@ -1,0 +1,537 @@
+<title>Behind the Assistant</title>
+<style>
+  :root {
+    --ink: #17262A;
+    --muted: #56696C;
+    --paper: #F5F7F6;
+    --surface: #FFFFFF;
+    --line: #DCE6E4;
+    --teal: #0F6E66;
+    --teal-deep: #0A4B46;
+    --teal-tint: #E3F1EE;
+    --gold: #B8863F;
+    --gold-tint: #F5ECDB;
+    --shadow: 0 1px 2px rgba(15, 40, 37, 0.06), 0 8px 24px -12px rgba(15, 40, 37, 0.12);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #EAF2F0;
+      --muted: #9FB4B1;
+      --paper: #0E1D1C;
+      --surface: #143230;
+      --line: #234745;
+      --teal: #59CDBE;
+      --teal-deep: #92E5D8;
+      --teal-tint: #17332F;
+      --gold: #E5B76B;
+      --gold-tint: #2B2013;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #EAF2F0;
+    --muted: #9FB4B1;
+    --paper: #0E1D1C;
+    --surface: #143230;
+    --line: #234745;
+    --teal: #59CDBE;
+    --teal-deep: #92E5D8;
+    --teal-tint: #17332F;
+    --gold: #E5B76B;
+    --gold-tint: #2B2013;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Source Sans 3", -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    padding-inline: 20px;
+    padding-block: 48px 64px;
+  }
+
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 20px;
+    height: 1px;
+    background: var(--teal);
+  }
+
+  h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: clamp(32px, 6vw, 44px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin: 14px 0 10px;
+    text-wrap: balance;
+  }
+
+  .subtitle {
+    font-size: 18px;
+    color: var(--muted);
+    max-width: 46ch;
+    text-wrap: balance;
+  }
+
+  .meta {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 28px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  .meta strong { color: var(--ink); font-weight: 500; }
+
+  /* At-a-glance strip */
+  .glance {
+    margin-top: 36px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 640px) {
+    .glance { grid-template-columns: 1fr; }
+  }
+
+  .glance-tile {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 16px 15px;
+  }
+
+  .glance-tile .mark {
+    font-family: "Fraunces", serif;
+    font-size: 22px;
+    color: var(--teal);
+    line-height: 1;
+  }
+
+  .glance-tile .label {
+    margin-top: 8px;
+    font-weight: 600;
+    font-size: 14.5px;
+  }
+
+  .glance-tile .desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .intro {
+    margin-top: 34px;
+    font-size: 17px;
+    color: var(--ink);
+  }
+
+  .intro p { margin: 0 0 14px; }
+  .intro p:last-child { margin-bottom: 0; }
+
+  section.qa {
+    margin-top: 56px;
+    padding-top: 40px;
+    border-top: 1px solid var(--line);
+  }
+
+  .q-tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  blockquote.question {
+    margin: 10px 0 28px;
+    padding: 0 0 0 18px;
+    border-left: 3px solid var(--teal);
+    font-family: "Fraunces", serif;
+    font-weight: 500;
+    font-size: clamp(21px, 3.2vw, 26px);
+    line-height: 1.3;
+    color: var(--ink);
+    font-style: normal;
+    text-wrap: balance;
+  }
+
+  h2.sub {
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 19px;
+    margin: 30px 0 10px;
+  }
+
+  section.qa p {
+    margin: 0 0 14px;
+    max-width: 66ch;
+  }
+
+  section.qa ul {
+    margin: 0 0 14px;
+    padding-left: 20px;
+  }
+
+  section.qa li {
+    margin-bottom: 6px;
+    max-width: 62ch;
+  }
+
+  strong.hl { color: var(--teal-deep); font-weight: 600; }
+
+  /* Flow diagram */
+  .flow {
+    margin: 22px 0 26px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  @media (max-width: 640px) {
+    .flow { grid-template-columns: 1fr; }
+    .flow .arrow { transform: rotate(90deg); margin: 0 auto; }
+  }
+
+  .flow-step {
+    background: var(--teal-tint);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 12px 11px;
+    position: relative;
+  }
+
+  .flow-step .num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--teal);
+    font-weight: 500;
+  }
+
+  .flow-step .txt {
+    margin-top: 5px;
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+
+  .flow .arrow {
+    display: none;
+  }
+
+  @media (min-width: 641px) {
+    .flow {
+      grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+      align-items: center;
+    }
+    .flow .arrow {
+      display: block;
+      color: var(--muted);
+      font-size: 16px;
+    }
+  }
+
+  /* Spec table */
+  .spec {
+    margin: 22px 0 8px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .spec-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1.6fr;
+    gap: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .spec-row:first-child { border-top: none; }
+
+  @media (max-width: 640px) {
+    .spec-row {
+      grid-template-columns: 1fr;
+      padding: 12px 14px;
+      gap: 4px;
+    }
+    .spec-row > div { padding: 0 !important; }
+  }
+
+  .spec-row > div {
+    padding: 12px 14px;
+    font-size: 13.5px;
+  }
+
+  .spec-row .k {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    color: var(--teal-deep);
+    font-weight: 500;
+  }
+
+  .spec-row .v {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .spec-row .why {
+    color: var(--muted);
+  }
+
+  .spec-head {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1.6fr;
+    background: var(--teal-tint);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--teal-deep);
+  }
+
+  @media (max-width: 640px) { .spec-head { display: none; } }
+
+  .spec-head > div { padding: 10px 14px; }
+
+  /* Glossary */
+  .glossary {
+    margin-top: 22px;
+    padding: 14px 16px;
+    background: var(--gold-tint);
+    border-radius: 8px;
+    font-size: 13.5px;
+  }
+
+  .glossary .g-title {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .glossary dl {
+    margin: 0;
+    display: grid;
+    gap: 6px;
+  }
+
+  .glossary dt {
+    display: inline;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .glossary dd {
+    display: inline;
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .glossary dt::after { content: " — "; color: var(--muted); font-weight: 400; }
+
+  /* Status closing */
+  .status {
+    margin-top: 56px;
+    padding: 22px 22px 24px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .status .q-tag { color: var(--teal); }
+
+  .status h2.sub { margin-top: 8px; }
+
+  .status-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 10px 0;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--teal);
+    flex-shrink: 0;
+    transform: translateY(-1px);
+  }
+
+  .status-dot.pending { background: var(--gold); }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div class="page">
+
+  <div class="eyebrow">Project brief</div>
+  <h1>Behind the Assistant</h1>
+  <p class="subtitle">Two questions came up that couldn't be answered without the system in front of us. Now it exists — here is exactly how it works.</p>
+
+  <div class="meta">
+    <span>Prepared <strong>15 September 2026</strong></span>
+    <span>Covers <strong>knowledge base &amp; risk model</strong></span>
+    <span>Status <strong>implementation complete</strong></span>
+  </div>
+
+  <div class="glance">
+    <div class="glance-tile">
+      <div class="mark">✓</div>
+      <div class="label">Grounded, not generic</div>
+      <div class="desc">The chat assistant only answers from a vetted medical library — never from open internet knowledge.</div>
+    </div>
+    <div class="glance-tile">
+      <div class="mark">✓</div>
+      <div class="label">Transparent scoring</div>
+      <div class="desc">Every risk result traces back to the specific answers that produced it — nothing is a black box.</div>
+    </div>
+    <div class="glance-tile">
+      <div class="mark">✓</div>
+      <div class="label">No invented numbers</div>
+      <div class="desc">The app never shows a precise-sounding statistic it has no real data to support.</div>
+    </div>
+  </div>
+
+  <div class="intro">
+    <p>Two questions were raised that the previous state of the project couldn't answer: <em>how does the chatbot's knowledge base actually work</em>, and <em>what were the design choices and results behind the risk model</em>. Both questions were fair — at the time, there was no system to point to. That's now been built. This brief walks through both, in plain terms, with the technical specifics attached for the record.</p>
+  </div>
+
+  <!-- QUESTION 1 -->
+  <section class="qa">
+    <div class="q-tag">Question 1</div>
+    <blockquote class="question">How does the chatbot's knowledge base work?</blockquote>
+
+    <h2 class="sub">What it actually knows</h2>
+    <p>The assistant draws from a small, deliberately curated library of medical content — not the open internet, and not the AI's general training knowledge. The library covers what cervical cancer is, its symptoms, prevention, the HPV vaccine, screening schedules, risk factors, and how to interpret test results — sourced from WHO, CDC, and American Cancer Society patient guidance. Keeping it narrow and vetted, rather than broad and scraped, was the deliberate choice: in a health app, <strong class="hl">getting less wrong matters more than covering more ground</strong>.</p>
+
+    <h2 class="sub">How it finds the right answer</h2>
+    <p>When a user asks something, the system doesn't send the question straight to an AI and hope for the best. It first searches the library for the passages most relevant to that specific question, then hands only those passages to the AI and instructs it to answer strictly from them. If nothing in the library is relevant enough, the assistant says so honestly rather than guessing.</p>
+
+    <div class="flow">
+      <div class="flow-step"><div class="num">01</div><div class="txt">User asks a question, in any of the app's four languages</div></div>
+      <div class="arrow">→</div>
+      <div class="flow-step"><div class="num">02</div><div class="txt">System searches the vetted library for the closest matches</div></div>
+      <div class="arrow">→</div>
+      <div class="flow-step"><div class="num">03</div><div class="txt">Only genuinely relevant passages are kept — off-topic content is dropped</div></div>
+      <div class="arrow">→</div>
+      <div class="flow-step"><div class="num">04</div><div class="txt">The AI writes a reply using only those passages, in the user's language</div></div>
+    </div>
+
+    <h2 class="sub">Staying on topic</h2>
+    <p>Anything unrelated to cervical cancer or reproductive health — weather, politics, entertainment — is redirected before it ever reaches the AI. The assistant is scoped on purpose; it isn't meant to be a general chatbot.</p>
+
+    <div class="spec">
+      <div class="spec-head"><div>Component</div><div>What was chosen</div><div>Why</div></div>
+      <div class="spec-row"><div class="k">Search method</div><div class="v">Local semantic search (embeddings)</div><div class="why">Runs on every message with no per-request cost or external dependency</div></div>
+      <div class="spec-row"><div class="k">Answer writer</div><div class="v">OpenAI (GPT-4o mini)</div><div class="why">Fluent, natural multilingual replies — the one place a large hosted model earns its cost</div></div>
+      <div class="spec-row"><div class="k">Language support</div><div class="v">English &amp; Spanish (full), Swahili &amp; Yoruba (fallback)</div><div class="why">Matches the app's four supported languages; translated content is still expanding</div></div>
+      <div class="spec-row"><div class="k">Unknown questions</div><div class="v">Declines rather than guesses</div><div class="why">A wrong confident answer is worse than an honest "I don't have that"</div></div>
+    </div>
+
+    <div class="glossary">
+      <div class="g-title">In plain terms</div>
+      <dl>
+        <div><dt>Semantic search</dt><dd>matching by meaning rather than exact keywords, so "does the shot hurt" still finds the vaccine article.</dd></div>
+        <div><dt>RAG</dt><dd>"Retrieval-Augmented Generation" — the technical name for look-it-up-then-answer, instead of answer-from-memory.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- QUESTION 2 -->
+  <section class="qa">
+    <div class="q-tag">Question 2</div>
+    <blockquote class="question">What are the risk model's design choices — and what are its results?</blockquote>
+
+    <h2 class="sub">Why it isn't a trained prediction model</h2>
+    <p>There is a public research dataset this kind of tool is often built on — but it only covers 858 people, with very few confirmed cancer cases and a lot of missing answers. Training a predictive model on data that thin tends to produce results that look precise but aren't actually reliable — a real risk in a health context. So instead of training a model to guess, the system was built to <strong class="hl">reason transparently</strong> from established medical risk factors.</p>
+
+    <h2 class="sub">How a score is actually produced</h2>
+    <p>Each answer a user gives is checked against a set of known risk factors — prior test results, HPV or HIV status, smoking history, screening history, and others — and contributes points according to how strongly that factor is linked to cervical cancer risk in medical guidance. The points add up to a score, which maps to a Low, Moderate, or High result.</p>
+
+    <div class="flow">
+      <div class="flow-step"><div class="num">01</div><div class="txt">User completes the 30-question assessment</div></div>
+      <div class="arrow">→</div>
+      <div class="flow-step"><div class="num">02</div><div class="txt">Each answer is checked against known clinical risk factors</div></div>
+      <div class="arrow">→</div>
+      <div class="flow-step"><div class="num">03</div><div class="txt">Matching factors add weighted points, openly</div></div>
+      <div class="arrow">→</div>
+      <div class="flow-step"><div class="num">04</div><div class="txt">Result shows the level and exactly which factors drove it</div></div>
+    </div>
+
+    <h2 class="sub">Why there's no "1 in 12" style statistic</h2>
+    <p>An early option was showing a precise-sounding figure — something like "you have a 1 in 12 chance." That was deliberately rejected. The system has no data connecting its point total to real-world incidence rates, so a number like that would look far more certain than it actually is. Instead, the result gives a clear risk level and the specific reasons behind it — accurate to what the system actually knows.</p>
+
+    <h2 class="sub">What "results" means for a system like this</h2>
+    <p>Because nothing was trained on data, there's no accuracy percentage to report the way there would be for a machine-learning model — and that's a stated design decision, not a gap. Every completed assessment is saved, on purpose, so that if the weighting ever needs to be tuned against real usage patterns, the data to do that already exists.</p>
+
+    <div class="spec">
+      <div class="spec-head"><div>Factor group</div><div>Example</div><div>Weighting logic</div></div>
+      <div class="spec-row"><div class="k">Test results</div><div class="v">Positive biopsy, abnormal Pap smear</div><div class="why">Heaviest weight — closest signal to an actual clinical finding</div></div>
+      <div class="spec-row"><div class="k">Infection history</div><div class="v">HPV, HIV/AIDS status</div><div class="why">Moderate weight — well-evidenced contributing factors</div></div>
+      <div class="spec-row"><div class="k">Lifestyle</div><div class="v">Smoking duration, contraceptive use</div><div class="why">Moderate weight, scaled by duration/intensity</div></div>
+      <div class="spec-row"><div class="k">History</div><div class="v">Partner count, screening history</div><div class="why">Lighter weight — contributing, not determinative</div></div>
+    </div>
+
+    <div class="glossary">
+      <div class="g-title">In plain terms</div>
+      <dl>
+        <div><dt>Rule-based</dt><dd>the logic is written and reviewable by a person, not learned automatically from data.</dd></div>
+        <div><dt>Calibrated</dt><dd>a number that's been checked against real outcomes to confirm it means what it claims to mean.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <div class="status">
+    <div class="q-tag">Where this stands today</div>
+    <h2 class="sub">Implementation status</h2>
+    <div class="status-row"><span class="status-dot"></span><span>Both systems above are fully built and pass all code-level checks.</span></div>
+    <div class="status-row"><span class="status-dot pending"></span><span>Final integration testing against a live database is the one step still ahead before this is demo-ready.</span></div>
+  </div>
+
+  <footer>Technical companion to the verbal walkthrough — cervical cancer awareness app.</footer>
+
+</div>

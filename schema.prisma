@@ -1,0 +1,79 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+/// A chunk of the cervical-cancer RAG knowledge base, embedded with a local
+/// sentence-transformer (all-MiniLM-L6-v2, 384 dims) for cosine-similarity retrieval.
+/// The `embedding` column is managed with raw SQL (see EmbeddingsService) because
+/// Prisma does not yet have first-class support for pgvector types.
+model KnowledgeChunk {
+  id        String                  @id @default(uuid())
+  category  String
+  language  String                  @default("en")
+  title     String
+  content   String
+  embedding Unsupported("vector(384)")?
+  sourceUrl String?
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+
+  @@index([category])
+  @@index([language])
+  @@map("knowledge_chunks")
+}
+
+/// One turn of a FAQ chat conversation, kept for traceability/evaluation
+/// (e.g. reviewing which knowledge chunks were retrieved for a given answer).
+model ChatMessage {
+  id                String   @id @default(uuid())
+  sessionId         String
+  role              String
+  content            String
+  language          String   @default("en")
+  retrievedChunkIds String[] @default([])
+  createdAt         DateTime @default(now())
+
+  @@index([sessionId])
+  @@map("chat_messages")
+}
+
+/// A completed risk assessment submission and the score the rule-based
+/// scoring engine produced for it. Kept so the scoring weights can be
+/// reviewed/tuned against real submissions later.
+model RiskAssessment {
+  id              String   @id @default(uuid())
+  answers         Json
+  riskScore       Int
+  riskLevel       String
+  probability     String
+  keyFactors      String[] @default([])
+  recommendations String[] @default([])
+  nextSteps       String[] @default([])
+  createdAt       DateTime @default(now())
+
+  @@map("risk_assessments")
+}
+
+/// Local cache of OpenStreetMap results for nearby-hospital lookups,
+/// so repeated searches in the same area don't re-hit the Overpass API.
+model SpecialistCache {
+  id          String   @id @default(uuid())
+  osmId       String   @unique
+  name        String
+  latitude    Float
+  longitude   Float
+  address     String?
+  phone       String?
+  amenityType String?
+  raw         Json?
+  fetchedAt   DateTime @default(now())
+
+  @@map("specialist_cache")
+}
